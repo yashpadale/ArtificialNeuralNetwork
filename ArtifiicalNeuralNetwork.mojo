@@ -3,9 +3,10 @@ from algorithm import vectorize
 from memory import memset_zero
 from random import rand, random_float64,randn
 from algorithm import Static2DTileUnitFunc as Tile2DFunc
-from math import mul, div, mod, add, trunc, align_down, align_down_residual
+from math import mul, div, mod, add, trunc, align_down, align_down_residual,sqrt
 from memory import memset_zero, memcpy
 from sys.info import simdwidthof
+# /home/yash/copyingstuff.mojo
 from algorithm import vectorize
 from algorithm.functional import elementwise
 from algorithm.reduction import max, min, sum, cumsum, mean, argmin
@@ -21,6 +22,7 @@ from buffer.list import DimList
 from algorithm import parallelize
 
 alias simd_width:Int=simdwidthof[type]()
+
 struct Matrix[rows: Int, cols: Int]:
     var data: DTypePointer[type]
 
@@ -64,6 +66,11 @@ struct Matrix[rows: Int, cols: Int]:
 
     fn store[nelts: Int](self, y: Int, x: Int, val: SIMD[type, nelts]):
         return self.data.store[width=nelts](y * self.cols + x, val)
+
+ 
+
+
+  
     
     fn __str__(self) -> String:        
         var rank:Int = 2
@@ -163,7 +170,17 @@ fn matadd_parallelized(C: Matrix, A: Matrix):
                 C[m, n] += A[0, n]
 
 
+                
 
+
+
+fn mat_subtract_parallelized(C: Matrix, A: Matrix, B: Matrix):
+    for m in range(C.rows):
+        for k in range(A.cols):
+            for n in range(C.cols):
+              
+                C[m, n] = (A[m, k] - B[k, n])*(A[m, k] - B[k, n])
+               
 
 
 
@@ -171,42 +188,73 @@ fn matadd_parallelized(C: Matrix, A: Matrix):
 fn forward_pass(inputs:Matrix[],weights:Matrix[],bias:Matrix[],output:Matrix[])->None:
         matmul_parallelized(output,inputs,weights)
         matadd_parallelized(output,bias)
+
+
         
 
 
+   
 
+
+
+    
+        
+
+        
+       
 
                 
 fn main () raises:
     var input_x = Matrix[3, 5].rand()
     var input_y=Matrix[3, 1].rand()
 
-    # Randomly Creating a labelled data for training a Linear regression Model
-    print("input_x")
-    print(input_x.__str__())
-    print("input_y")
-    print(input_y.__str__())
-
-
-    # creating layer1 
-    var weights1=Matrix[5,4].randn() # 5 is number of inputs in currect layer and 4 is number of neurons
+    var weights1=Matrix[5,4].randn() 
     var bias1=Matrix[2, 4].randn()
-    
     var output_layer1=Matrix[3,4]()
+
     forward_pass(input_x,weights1,bias1,output_layer1)
-    # Now the output of input*weight+bias is saved in the variable output1
 
-
-    # creating layer2
-    var weights2=Matrix[4,1].randn() # 4 is number of inputs in currect layer and 1 is number of neurons
-
+    var weights2=Matrix[4,1].randn()
     var bias2=Matrix[2, 1].randn()
     var output_layer2=Matrix[3,1]()
+    
     forward_pass(output_layer1,weights2,bias2,output_layer2)
-    # Now the output of input*weight+bias is saved in the variable output2
-    # which is also the final output of our forward propagation
-    print("forward propagation output")
-    print(output_layer2.__str__())
+
+    #Mean Square error
+
+    var Loss=Matrix[3,1]()
+    mat_subtract_parallelized(Loss,output_layer2,input_y)
+
+    var d=Loss.__dim__()
+
+    var L1=Matrix[1,1]()
+    for i in range(d[0]):
+      L1[0,0]+=Loss[i,0]
+
+
+    var MeanSquareError=L1[0,0]
+    print(MeanSquareError)
+
+
+   
+    
+
+
+    
+    
+
+
+
+
+   
+
+
+      
+   
+
+  
+
+    
 
 
     
